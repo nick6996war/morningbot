@@ -1,15 +1,15 @@
-const TelegramBot = require('node-telegram-bot-api')
-const requestPromise = require('request-promise')
-const fs = require("fs");
-const mysql = require('mysql2');
+const TelegramBot = require("node-telegram-bot-api")
+const requestPromise = require("request-promise")
+const fs = require("fs")
+const db = require("./db")
+const newsG = require("./news")
+let now = new Date();
+
+
 
 const token = '1209355037:AAFzVNyTQ6seEgvYeQ2tGyQ5RpyejV3ftQI'
 const bot = new TelegramBot(token, { polling: true })
-const connection = mysql.createConnection({
-	host: 'localhost',
-	user: 'root',
-	database: 'test'
-  });
+
 
 bot.sendMessage(400034907, 'Я ожил хозяин');
 
@@ -40,19 +40,11 @@ function replaceLeng(str) {
 
 //функция для работы напоминаний
 // и отправки информации утром
-function DbQuery(QW){
-	connection.query(
-		'SELECT * FROM `table` WHERE `name` = "Page" AND `age` > 45',
-		function(err, results, fields) {
-		  console.log(results); 
-		  console.log(fields); 
-		}
-	  );
-}
+
 // клавиатури для отправки локации 
 //добавить выбор городов 
 function GetGeo(msg) {
-	bot.sendMessage(msg.from.id, "Для получения точной погоды нужны ваши кординаты", { // Для продолжения нужен ваш номер телефона
+	bot.sendMessage(msg.from.id, "Для получения точной погоды нужны ваши кординаты", { 
 		// создание клавиатуры на стороне пользователя
 		reply_markup: {
 			resize_keyboard: true, one_time_keyboard: true,
@@ -70,6 +62,7 @@ async function Weather(msg) {
 	console.log(resp)
 	return (resp.current.weather[0].description + ", температура: " + resp.current.temp)
 }
+
 //получаем курс валют по апи 
 async function Сurrency() {
 	let answer = await requestPromise(linkСurrency)
@@ -78,7 +71,7 @@ async function Сurrency() {
 	return ("USD покупка: " + resp[0].buy + "грн продажа: " + resp[0].sale + "грн \nEUR покупка: " + resp[1].buy + "грн продажа: " + resp[1].sale + "грн\nBTC покупка: " + resp[3].buy + "дол продажа: " + resp[3].sale + "дол")
 }
 
-//алгоритм прогоняющий сообщения для более точніх совпадений
+//алгоритм прогоняющий сообщения для более точных совпадений
 async function Conversation(qwestion, text) {
 	if (qwestion == undefined) {
 		wordsArr = text.split(" ")
@@ -129,12 +122,33 @@ bot.on('message', async function (msg) {
 		answer = await Weather(msg);
 		bot.sendMessage(userId, answer)
 
-	} else {
+	} else if (msg.text == "/start") {
+		if (msg.chat.last_namel == undefined) { msg.chat.last_namel = null } else { msg.chat.last_namel = msg.chat.last_namel.toLowerCase() }
+		db.sentStartDate(msg.chat.first_name.toLowerCase(), msg.chat.last_namel, msg.chat.id)
+		
+		var options = {
+			reply_markup: JSON.stringify({
+			  inline_keyboard: [
+				[{ text: 'Погода', callback_data: '1' }],
+				[{ text: 'Курс валют', callback_data: '2' }],
+				[{ text: 'Новости', callback_data: '3' }]
+			  ]
+			})
+		  }
+
+		
+
+		bot.sendMessage(userId, 'выбери что бы ты хотел знать утром (выбери несколько или однин вариант)',options)
+
+	}else if(/^[0-9]{2}[.]{1}[0-9]{2}$/.test(msg.text)||/^[0-9]{1}[.]{1}[0-9]{2}$/.test(msg.text) ){
+		db.sentDateTime(msg.text, msg.from.id)
+		answer = "я запомнил время"
+		bot.sendMessage(userId, answer)
+	}
+	else {
 		let text = msg.text.toLowerCase()
 		if (isEn(text)) {
-			console.log(text)
 			text = await replaceLeng(text)
-			console.log(text)
 		}
 		let qwestion = arrQWestions[text]
 		if (qwestion < 99) {
@@ -146,9 +160,9 @@ bot.on('message', async function (msg) {
 				console.log(now_utc)
 				answer = date.toString()
 			}
-			if (qwestion == 2) answer = await Сurrency();
-			if (qwestion == 3) answer = await GetGeo(msg);
-			if (qwestion == 4);
+			else if (qwestion == 2) answer = await Сurrency();
+			else if (qwestion == 3) answer = await GetGeo(msg);
+			else if (qwestion == 4) answer = await newsG.date
 			console.log(answer)
 			bot.sendMessage(userId, answer);
 		}
@@ -161,3 +175,21 @@ bot.on('message', async function (msg) {
 		}
 	}
 })
+
+bot.on('callback_query', function (msg) {
+	console.log(msg)
+	let userId = msg.from.id;
+	bot.sendMessage(userId, 'В котором часу тебе это присылать (пришли время в формате часы.минуты что бы получилось так: 7.24')
+	db.sentDataKnow(msg.data,msg.from.id)
+})
+
+setInterval(async() => {
+	let time = await db.getTime
+		console.log(time)
+	for (let i=0;i<10;i++){
+		if(true){
+
+		}
+	}
+	
+}, 6000);

@@ -1,0 +1,20 @@
+{
+  "name": "morning-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "moment": "^2.26.0",
+    "mysql": "^2.18.1",
+    "mysql2": "^2.1.0",
+    "mysql3": "^0.4.13",
+    "node-telegram-bot-api": "^0.50.0",
+    "request-promise": "^4.2.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Kyrychok Mykola",
+  "license": "ISC"
+}
